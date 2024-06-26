@@ -164,7 +164,8 @@ class PDFPlumberParser(Parser):
             split_at_punctuation = type(self).DEFAULT_PUNCTUATION_CHARS
         self.split_at_punctuation = split_at_punctuation
 
-    def parse(self, input_pdf_path: str, **kwargs) -> Document:
+    def parse(self, input_pdf_path: str, return_blank_page_mask = False, **kwargs) -> Document:
+        is_blank = []
         with pdfplumber.open(input_pdf_path) as plumber_pdf_object:
             all_tokens = []
             all_word_ids = []
@@ -177,7 +178,7 @@ class PDFPlumberParser(Parser):
             for page_id, page in enumerate(plumber_pdf_object.pages):
                 page_unit = float(page.page_obj.attrs.get("UserUnit", 1.0))
                 all_page_dims.append((float(page.width), float(page.height), page_unit))
-
+                
                 # 1) tokens we use for Document.symbols
                 coarse_tokens = page.extract_words(
                     x_tolerance=self.token_x_tolerance,
@@ -201,6 +202,7 @@ class PDFPlumberParser(Parser):
                     split_at_punctuation=self.split_at_punctuation,
                     append_attrs=["fontname", "size"],
                 ).extract(page.chars)
+
                 # 3) align fine tokens with coarse tokens
                 word_ids_of_fine_tokens = self._align_coarse_and_fine_tokens(
                     coarse_tokens=[c["text"] for c in coarse_tokens],
@@ -241,6 +243,10 @@ class PDFPlumberParser(Parser):
                 last_word_id = all_word_ids[-1]
                 for _ in fine_tokens:
                     all_page_ids.append(page_id)
+                if len(fine_tokens) == 0:
+                    is_blank.append(True)
+                else:
+                    is_blank.append(False)
             # now turn into a beautiful document!
             doc_json = self._convert_nested_text_to_doc_json(
                 token_dicts=all_tokens,
@@ -250,6 +256,8 @@ class PDFPlumberParser(Parser):
                 dims=all_page_dims,
             )
             doc = Document.from_json(doc_json)
+            if return_blank_page_mask:
+                return (doc, is_blank)
             return doc
 
     def _convert_nested_text_to_doc_json(
