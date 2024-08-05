@@ -28,6 +28,7 @@ from papermage.magelib import (
     ImagesFieldName,
     KeywordsFieldName,
     ListsFieldName,
+    LatexFieldName,
     PagesFieldName,
     ParagraphsFieldName,
     RelationsFieldName,
@@ -148,7 +149,7 @@ class SciRecipe(Recipe):
 
         self.logger.info("Predicting latex formulas...")
         latex_entities = self.math_predictor.predict(doc=doc)
-        doc.annotate_layer(name="latex_entities", entities=latex_entities)
+        doc.annotate_layer(name=LatexFieldName, entities=latex_entities)
 
         for entity in latex_entities:
             entity.boxes = [
@@ -156,8 +157,8 @@ class SciRecipe(Recipe):
                     [b for t in doc.intersect_by_span(entity, name=TokensFieldName) for b in t.boxes]
                 )
             ]
-        for entity in sorted(latex_entities, key=lambda e: (e.end, e.start))
-            entity.text = make_text(entity=entity, document=doc)
+        for entity in sorted(latex_entities, key=lambda e: (e.end, e.start), reverse=True):
+            doc.symbols[entity.start : entity.end] = entity.metadata.latex
 
         return doc
 

@@ -31,6 +31,8 @@ BlocksFieldName = "blocks"
 WordsFieldName = "words"
 SentencesFieldName = "sentences"
 ParagraphsFieldName = "paragraphs"
+LatexFieldName = "latex"
+InlineLatexFieldName = "inline_latex"
 
 # these come from vila
 TitlesFieldName = "titles"
