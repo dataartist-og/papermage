@@ -7,7 +7,6 @@ to reduce the dependency on the VILA package.
 @shannons, @kylel
 
 """
-
 import os
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -19,7 +18,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import torch
 from tqdm import tqdm
-from vila.predictors import LayoutIndicatorPDFPredictor
+from vila.predictors import LayoutIndicatorPDFPredictor, SimplePDFPredictor
 
 from papermage.magelib import (
     BlocksFieldName,
@@ -103,23 +102,16 @@ def shift_index_sequence_to_zero_start(sequence):
 
 # util
 def get_visual_group_id(token: Entity, field_name: str, defaults=-1) -> int:
-    field_value = token.intersect_by_span(name=field_name)
-    if not field_value:
+    if not hasattr(token, field_name):
         return defaults
+    field_value = getattr(token, field_name)
     if len(field_value) == 0 or field_value[0].id is None:
         return defaults
     return field_value[0].id
 
-    # if not hasattr(token, field_name):
-    #     return defaults
-    # field_value = getattr(token, field_name)
-    # if len(field_value) == 0 or field_value[0].id is None:
-    #     return defaults
-    # return field_value[0].id
-
 
 # util
-def convert_document_page_to_pdf_dict(page: Entity, page_width: int, page_height: int) -> Dict[str, List]:
+def convert_document_page_to_pdf_dict(doc: Document, page_width: int, page_height: int) -> Dict[str, List]:
     """Convert a document to a dictionary of the form:
         {
             'words': ['word1', 'word2', ...],
@@ -154,7 +146,7 @@ def convert_document_page_to_pdf_dict(page: Entity, page_width: int, page_height
             get_visual_group_id(token, RowsFieldName, -1),  # line_ids
             get_visual_group_id(token, BlocksFieldName, -1),  # block_ids
         )
-        for token in page.intersect_by_span(name=TokensFieldName)
+        for token in doc.tokens
     ]
 
     words, bbox, line_ids, block_ids = (list(l) for l in zip(*token_data))
@@ -235,43 +227,38 @@ class BaseSinglePageTokenClassificationPredictor(BasePredictor):
     def _predict(self, doc: Document, subpage_per_run: Optional[int] = None) -> List[Entity]:
         page_prediction_results = []
         for page_id, page in enumerate(doc.pages):
+            if page.tokens:
+                page_width, page_height = doc.images[page_id].pilimage.size
 
-            # skip pages without tokens
-            tokens_on_page = page.intersect_by_span(name=TokensFieldName)
-            if not tokens_on_page:
-                continue
+                pdf_dict = self.preprocess(page, page_width=page_width, page_height=page_height)
 
-            page_width, page_height = doc.images[page_id].pilimage.size
+                model_predictions = self.predictor.predict(
+                    page_data=pdf_dict,
+                    page_size=(page_width, page_height),
+                    batch_size=subpage_per_run or self.subpage_per_run,
+                    return_type="list",
+                )
 
-            pdf_dict = self.preprocess(page=page, page_width=page_width, page_height=page_height)
+                assert len(model_predictions) == len(
+                    page.tokens
+                ), f"Model predictions and tokens are not the same length ({len(model_predictions)} != {len(page.tokens)}) for page {page_id}"
 
-            model_predictions = self.predictor.predict(
-                page_data=pdf_dict,
-                page_size=(page_width, page_height),
-                batch_size=subpage_per_run or self.subpage_per_run,
-                return_type="list",
-            )
-
-            assert len(model_predictions) == len(
-                tokens_on_page
-            ), f"Model predictions and tokens are not the same length ({len(model_predictions)} != {len(tokens_on_page)}) for page {page_id}"
-
-            page_prediction_results.extend(self.postprocess(page=page, model_predictions=model_predictions))
+                page_prediction_results.extend(self.postprocess(page, model_predictions))
 
         return page_prediction_results
 
-    def preprocess(self, page: Entity, page_width: float, page_height: float) -> Dict:
+    def preprocess(self, page: Document, page_width: float, page_height: float) -> Dict:
         # In the latest vila implementations (after 0.4.0), the predictor will
         # handle all other preprocessing steps given the pdf_dict input format.
 
-        return convert_document_page_to_pdf_dict(page=page, page_width=page_width, page_height=page_height)
+        return convert_document_page_to_pdf_dict(page, page_width=page_width, page_height=page_height)
 
-    def postprocess(self, page: Entity, model_predictions) -> List[Entity]:
+    def postprocess(self, doc: Document, model_predictions) -> List[Entity]:
         token_prediction_spans = convert_sequence_tagging_to_spans(model_predictions)
 
         prediction_spans = []
         for token_start, token_end, label in token_prediction_spans:
-            cur_spans = page.intersect_by_span(name=TokensFieldName)[token_start:token_end]
+            cur_spans = doc.tokens[token_start:token_end]
 
             start = min([ele.start for ele in cur_spans])
             end = max([ele.end for ele in cur_spans])

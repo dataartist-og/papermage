@@ -1,6 +1,6 @@
 [project]
 name = 'papermage'
-version = '0.20.0'
+version = '0.15.1'
 description = 'Papermage. Casting magic over scientific PDFs.'
 license = {text = 'Apache-2.0'}
 readme = 'README.md'
@@ -12,6 +12,7 @@ dependencies = [
         'requests',
         'numpy>=1.23.2',
         'scipy>=1.9.0',
+        'pandas<2',
         'ncls==0.0.68',
         'necessary>=0.3.2',
         'grobid-client-python==0.0.5',
@@ -131,10 +132,8 @@ predictors = [
     'wandb>=0.15.7',
     'seqeval==1.2.2',
     'effdet==0.3.0',
+    'decontext==0.1.6',
     'vila==0.5.0'
-]
-decontext = [
-    'decontext==0.1.6'
 ]
 production = [
     'optimum[onnxruntime]==1.10.0'

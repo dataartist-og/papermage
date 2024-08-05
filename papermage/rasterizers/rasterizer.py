@@ -38,6 +38,7 @@ class Rasterizer(Protocol):
             raise ValueError(f"Failed to attach. Document is missing `pages`.")
         pages = doc.get_layer(name=PagesFieldName)
         if len(images) != len(pages):
+            import pdb; pdb.set_trace()
             raise ValueError(f"Failed to attach. {len(images)} `images` != {len(pages)} pages in `doc`.")
         for page, image in zip(pages, images):
             if page.images:

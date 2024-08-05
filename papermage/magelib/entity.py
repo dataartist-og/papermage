@@ -4,16 +4,15 @@ An annotated "unit" in a Layer.
 
 """
 
-import logging
 from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 from .box import Box
 from .image import Image
 from .metadata import Metadata
-from .names import TokensFieldName
 from .span import Span
 
 if TYPE_CHECKING:
+    from .document import TokensFieldName
     from .layer import Layer
 
 
@@ -94,20 +93,8 @@ class Entity:
 
     def __getattr__(self, name: str) -> List["Entity"]:
         """This Overloading is convenient syntax since the `entity.layer` operation is intuitive for folks."""
-        # add method deprecation warning
-        logger = logging.getLogger(__name__)
-        logger.warning(
-            "Entity.__getattr__ is deprecated due to ambiguity and will be removed in a future release."
-            "Please use Entity.intersect_by_span or Entity.intersect_by_box instead."
-        )
         try:
-            if len(self.spans) > 0:
-                intersection = self.intersect_by_span(name=name)
-                if len(intersection) == 0 and len(self.boxes) > 0:
-                    intersection = self.intersect_by_box(name=name)
-                return intersection
-            else:
-                return self.intersect_by_box(name=name)
+            return self.intersect_by_span(name=name)
         except ValueError:
             # maybe users just want some attribute of the Entity object
             return self.__getattribute__(name)
@@ -177,10 +164,10 @@ class Entity:
             return maybe_text
         # return derived from symbols
         if self.symbols_from_spans:
-            return " ".join(self.symbols_from_spans).replace("\n", " ")
+            return " ".join(self.symbols_from_spans)
         # return derived from boxes and tokens
         if self.symbols_from_boxes:
-            return " ".join(self.symbols_from_boxes).replace("\n", " ")
+            return " ".join(self.symbols_from_boxes)
         return ""
 
     @text.setter

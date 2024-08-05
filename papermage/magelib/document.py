@@ -5,24 +5,49 @@
 
 """
 
-import logging
 from itertools import chain
 from typing import Dict, List, NamedTuple, Optional, Tuple, Union
+
+from traitlets import Int
 
 from .box import Box
 from .entity import Entity
 from .image import Image
 from .layer import Layer
 from .metadata import Metadata
-from .names import (
-    EntitiesFieldName,
-    ImagesFieldName,
-    MetadataFieldName,
-    RelationsFieldName,
-    SymbolsFieldName,
-    TokensFieldName,
-)
 from .span import Span
+
+# document field names
+SymbolsFieldName = "symbols"
+ImagesFieldName = "images"
+MetadataFieldName = "metadata"
+EntitiesFieldName = "entities"
+RelationsFieldName = "relations"
+
+PagesFieldName = "pages"
+TokensFieldName = "tokens"
+RowsFieldName = "rows"
+BlocksFieldName = "blocks"
+WordsFieldName = "words"
+SentencesFieldName = "sentences"
+ParagraphsFieldName = "paragraphs"
+
+# these come from vila
+TitlesFieldName = "titles"
+AuthorsFieldName = "authors"
+AbstractsFieldName = "abstracts"
+KeywordsFieldName = "keywords"
+SectionsFieldName = "sections"
+ListsFieldName = "lists"
+BibliographiesFieldName = "bibliographies"
+EquationsFieldName = "equations"
+AlgorithmsFieldName = "algorithms"
+FiguresFieldName = "figures"
+TablesFieldName = "tables"
+CaptionsFieldName = "captions"
+HeadersFieldName = "headers"
+FootersFieldName = "footers"
+FootnotesFieldName = "footnotes"
 
 
 class Prediction(NamedTuple):
@@ -38,7 +63,7 @@ class Document:
     sentences: Layer
     paragraphs: Layer
     pages: Layer
-
+    blank_pages : Optional[List[Int]] = []
     SPECIAL_FIELDS = [SymbolsFieldName, ImagesFieldName, MetadataFieldName]
 
     def __init__(
@@ -175,17 +200,7 @@ class Document:
 
     def find(self, query: Union[Span, Box], name: str) -> List[Entity]:
         """Finds all entities that intersect with the query"""
-        logger = logging.getLogger(__name__)
-        logger.warning(
-            "This method is deprecated due to ambiguity and will be removed in a future release."
-            "Please use Document.intersect_by_span or Document.intersect_by_box instead."
-        )
-        if isinstance(query, Span):
-            return self.intersect_by_span(query=Entity(spans=[query]), name=name)
-        elif isinstance(query, Box):
-            return self.intersect_by_box(query=Entity(boxes=[query]), name=name)
-        else:
-            raise TypeError(f"Unsupported query type {type(query)}")
+        return self.get_layer(name=name).find(query=query)
 
     def intersect_by_span(self, query: Entity, name: str) -> List[Entity]:
         """Finds all entities that intersect with the query"""

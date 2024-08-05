@@ -6,20 +6,18 @@ Needs to be imported in this order.
 
 """
 
+
 from .box import Box
-from .document import Document, Prediction
-from .entity import Entity
-from .image import Image
-from .indexer import EntityBoxIndexer, EntitySpanIndexer
 from .layer import Layer
-from .metadata import Metadata
-from .names import (
+from .document import (
     AbstractsFieldName,
     AlgorithmsFieldName,
     AuthorsFieldName,
     BibliographiesFieldName,
     BlocksFieldName,
     CaptionsFieldName,
+    Document,
+    Prediction,
     EntitiesFieldName,
     EquationsFieldName,
     FiguresFieldName,
@@ -42,8 +40,12 @@ from .names import (
     TokensFieldName,
     WordsFieldName,
 )
+from .entity import Entity
+from .image import Image
+from .indexer import EntityBoxIndexer, EntitySpanIndexer
+from .metadata import Metadata
 from .span import Span
-
+BLANK_PAGE_TOKEN = "<BLANK_PAGE>"
 __all__ = [
     "AbstractsFieldName",
     "AlgorithmsFieldName",
@@ -83,4 +85,5 @@ __all__ = [
     "TitlesFieldName",
     "TokensFieldName",
     "WordsFieldName",
+    "BLANK_PAGE_TOKEN",
 ]

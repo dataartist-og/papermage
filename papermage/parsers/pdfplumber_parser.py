@@ -22,6 +22,7 @@ from papermage.magelib import (
     Span,
     SymbolsFieldName,
     TokensFieldName,
+    BLANK_PAGE_TOKEN
 )
 from papermage.parsers.parser import Parser
 from papermage.utils.text import maybe_normalize

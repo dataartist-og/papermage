@@ -3,12 +3,11 @@ from papermage.predictors.base_predictors.hf_predictors import HFBIOTaggerPredic
 from papermage.predictors.block_predictors import LPEffDetPubLayNetBlockPredictor
 from papermage.predictors.formula_predictors import LPEffDetFormulaPredictor
 from papermage.predictors.sentence_predictors import PysbdSentencePredictor
-
-# from papermage.predictors.span_qa_predictors import APISpanQAPredictor
+from papermage.predictors.span_qa_predictors import APISpanQAPredictor
 from papermage.predictors.token_predictors import HFWhitspaceTokenPredictor
 from papermage.predictors.vila_predictors import IVILATokenClassificationPredictor
 from papermage.predictors.word_predictors import SVMWordPredictor
-
+from papermage.predictors.math_predictors import MathPredictor
 __all__ = [
     "HFBIOTaggerPredictor",
     "IVILATokenClassificationPredictor",
@@ -17,6 +16,7 @@ __all__ = [
     "PysbdSentencePredictor",
     "LPEffDetPubLayNetBlockPredictor",
     "LPEffDetFormulaPredictor",
-    # "APISpanQAPredictor",
+    "APISpanQAPredictor",
+    "MathPredictor",
     "BasePredictor",
 ]
