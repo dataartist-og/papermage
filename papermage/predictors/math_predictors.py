@@ -301,7 +301,7 @@ class MathPredictor(BasePredictor):
                         ).to_relative(page_width=img_W, page_height=img_H)
                     ],
                     images=[bbox_img],
-                    metadata=Metadata(**{"confidence": conf.item(), "class": cla.item()})
+                    metadata=Metadata(**{"confidence": conf.item(), "class": 'isolated_latex' if int(cla.item())==1 else 'inline_latex'})
                 )
                 entities.append(entity)
 

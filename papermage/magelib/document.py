@@ -197,7 +197,7 @@ class Document:
             doc.annotate_layer(name=field_name, entities=entities)
         
         # 3) instantiate images
-        if ImagesFieldName in doc_json:
+        if ImagesFieldName in doc_json.keys():
             images = [Image.from_base64(image_str) for image_str in doc_json[ImagesFieldName]]
             doc.annotate_images(images)
             for i, img in enumerate(images):
