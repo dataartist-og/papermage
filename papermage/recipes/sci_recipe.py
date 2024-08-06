@@ -82,7 +82,8 @@ class SciRecipe(Recipe):
         ivila_predictor_path: str = "allenai/ivila-row-layoutlm-finetuned-s2vl-v2",
         bio_roberta_predictor_path: str = "allenai/vila-roberta-large-s2vl-internal",
         svm_word_predictor_path: str = "https://ai2-s2-research-public.s3.us-west-2.amazonaws.com/mmda/models/svm_word_predictor.tar.gz",
-        dpi: int = 72,
+        dpi: int = 200,
+        mf_config_path: str = 'configs/model_configs.yaml'
     ):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.dpi = dpi
@@ -103,7 +104,7 @@ class SciRecipe(Recipe):
             context_name="pages",
         )
         self.sent_predictor = PysbdSentencePredictor()
-        self.math_predictor = MathPredictor()
+        self.math_predictor = MathPredictor(mf_config_path, verbose=True)
         self.logger.info("Finished instantiating recipe")
 
     def from_pdf(self, pdf: Path) -> Document:
@@ -172,7 +173,7 @@ if __name__ == "__main__":
     parser.add_argument("--output", type=str, help="Path to output JSON file.")
     args = parser.parse_args()
 
-    recipe = CoreRecipe()
+    recipe = SciRecipe()
     doc = recipe.from_pdf(pdf=args.pdf)
     with open(args.output, "w") as f:
         json.dump(doc.to_json(), f, indent=2)

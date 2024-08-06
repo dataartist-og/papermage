@@ -11,7 +11,7 @@ from papermage.magelib import (
 )
 from typing import List
 import os
-
+from tqdm.auto import tqdm
 import cv2
 import json
 import yaml
@@ -33,7 +33,7 @@ from litellm.caching import Cache
 litellm.cache = Cache(type="disk")
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
-litellm.set_verbose = True
+# litellm.set_verbose = True
 
 from PIL import ImageChops, Image, ImageDraw, ImageFont
 from torchvision import transforms
@@ -42,7 +42,7 @@ from ultralytics import YOLO
 from unimernet.common.config import Config
 import unimernet.tasks as tasks
 from unimernet.processors import load_processor
-
+import sys; sys.path.append('/content/PDF-Extract-Kit')
 from modules.latex2png import tex2pil, zhtext2pil
 from modules.extract_pdf import load_pdf_fitz
 from modules.layoutlmv3.model_init import Layoutlmv3_Predictor
@@ -52,6 +52,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from io import BytesIO
 import base64
+import torchvision.transforms.functional as tvt
 
 LATEX_STR_VALIDATION_PROMPT = "You are a LaTeX expert. Your job is to correct malformed latex. Only output the correct latex, even if the original is correct. Don't add any comments, just output the required latex string. Your response will directly be passed to the renderer, so if you add anything else you will fail.  Do not provide the open/close latex tags like \\(\\) \\[\\] or $,$$. Give the correct latex, nothing else."
 LATEX_STR_VALIDATION_W_IMG_PROMPT = f"You are a LaTeX expert. Your job is to validate and correct (potentially malformed) latex, given an image of what the rendered latex SHOULD look like.You will be provided an image, and a latex string. Your job is to check whether the string will match the provided image when rendered, and if it doesn't, provide a corrected latex string. Only output the correct latex, even if the original is correct. Don't add any comments, just output the required latex string. Your response will directly be passed to the renderer, so if you add anything else you will fail. Do not provide the open/close latex tags like \\(\\) \\[\\] or $,$$. Give the correct latex, nothing else."
@@ -91,7 +92,7 @@ def latex_to_image(latex_str, dpi=300):
 
 
 def mfr_model_init(weight_dir, device='cpu'):
-    args = argparse.Namespace(cfg_path="modules/UniMERNet/configs/demo.yaml", options=None)
+    args = argparse.Namespace(cfg_path="/content/PDF-Extract-Kit/modules/UniMERNet/configs/demo.yaml", options=None)
     cfg = Config(args)
     cfg.config.model.pretrained = os.path.join(weight_dir, "pytorch_model.bin")
     cfg.config.model.model_config.model_name = weight_dir
@@ -229,9 +230,9 @@ class MathPredictor(BasePredictor):
     def REQUIRED_DOCUMENT_FIELDS(self) -> List[str]:
         return [PagesFieldName, ImagesFieldName]
 
-    def __init__(self, verbose=False):
+    def __init__(self, config_path='configs/model_configs.yaml', verbose=False):
         # Initialize YOLO model using the implementation from PDF-Extract-Kit
-        with open('configs/model_configs.yaml') as f:
+        with open(config_path) as f:
             model_configs = yaml.load(f, Loader=yaml.FullLoader)
         self.img_size = model_configs['model_args']['img_size']
         self.conf_thres = model_configs['model_args']['conf_thres']
@@ -239,7 +240,7 @@ class MathPredictor(BasePredictor):
         self.device = model_configs['model_args']['device']
         self.dpi = model_configs['model_args']['pdf_dpi']
         self.mfd_model = mfd_model_init(model_configs['model_args']['mfd_weight'])
-        self.mfr_model, mfr_vis_processors = mfr_model_init(model_configs['model_args']['mfr_weight'], device=device)
+        self.mfr_model, mfr_vis_processors = mfr_model_init(model_configs['model_args']['mfr_weight'], device=self.device)
         self.mfr_transform = transforms.Compose([mfr_vis_processors, ])
         self.verbose = verbose
 
@@ -257,8 +258,26 @@ class MathPredictor(BasePredictor):
         document_prediction = []
 
         images = doc.get_layer(name=ImagesFieldName)
-        for image_index, image in enumerate(tqdm(images)):
+        resize_transform = transforms.Compose([
+            transforms.Resize((640, 640)),  # Resize to fixed size that is divisible by 32
+            # transforms.ToTensor(),          # Convert to tensor with shape (C, H, W)
+        ])
+
+        for image_index, pm_image in enumerate(tqdm(images)):
+            # Convert to tensor and resize
+            image = pm_image.to_array()
+            print (image_index, image.shape)
+
             img_H, img_W = image.shape[0], image.shape[1]
+            #image = resize_transform(image)
+            
+            # Add batch dimension
+            #image = image.unsqueeze(0)  # Now shape is (1, C, H, W)
+            
+            # Ensure tensor is on the correct device (if using GPU)
+            # if torch.cuda.is_available():
+            #     image = image.to('cuda')
+            
             mfd_res = self.mfd_model.predict(image, imgsz=self.img_size, conf=self.conf_thres, iou=self.iou_thres, verbose=self.verbose)[0]
             
             mf_image_list = []
@@ -279,10 +298,10 @@ class MathPredictor(BasePredictor):
                             page=image_index,
                             page_width=img_W,
                             page_height=img_H
-                        )
+                        ).to_relative(page_width=img_W, page_height=img_H)
                     ],
                     images=[bbox_img],
-                    metadata=Metadata({"confidence": conf.item(), "class": cla.item()})
+                    metadata=Metadata(**{"confidence": conf.item(), "class": cla.item()})
                 )
                 entities.append(entity)
 
@@ -297,7 +316,7 @@ class MathPredictor(BasePredictor):
             
             for entity, latex, img in zip(entities, mfr_res, mf_image_list):
                 latex = latex_rm_whitespace(latex)
-                corrected_latex = validate_and_correct_latex(latex, img)
+                corrected_latex = latex#validate_and_correct_latex(latex, img)
                 entity.metadata.latex = corrected_latex
 
             document_prediction.extend(entities)
