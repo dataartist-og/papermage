@@ -190,11 +190,18 @@ class Document:
         symbols = doc_json[SymbolsFieldName]
         doc = cls(symbols=symbols, metadata=Metadata(**doc_json.get(MetadataFieldName, {})))
 
+            
         # 2) instantiate entities
         for field_name, entity_jsons in doc_json[EntitiesFieldName].items():
             entities = [Entity.from_json(entity_json=entity_json) for entity_json in entity_jsons]
             doc.annotate_layer(name=field_name, entities=entities)
-
+        
+        # 3) instantiate images
+        if ImagesFieldName in doc_json:
+            images = [Image.from_base64(image_str) for image_str in doc_json[ImagesFieldName]]
+            doc.annotate_images(images)
+            for i, img in enumerate(images):
+                doc.pages[i].images = [img]
         return doc
 
     def __repr__(self):
