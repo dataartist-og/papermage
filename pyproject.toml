@@ -132,7 +132,6 @@ predictors = [
     'wandb>=0.15.7',
     'seqeval>=1.2.2',
     'effdet>=0.3.0',
-    'decontext==0.1.7',
     'vila==0.5.0'
 ]
 production = [
