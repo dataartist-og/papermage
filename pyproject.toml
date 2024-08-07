@@ -125,14 +125,13 @@ predictors = [
     'torch>=2.0.1',
     'torchvision>=0.15.2',
     'layoutparser==0.3.4',
-    'transformers==4.31.0',
+    'transformers==4.40.0',
     'smashed==0.1.10',
     'pytorch-lightning>=2.0.5',
     'springs==1.13.0',
     'wandb>=0.15.7',
     'seqeval==1.2.2',
     'effdet==0.3.0',
-    'decontext==0.1.6',
     'vila==0.5.0'
 ]
 production = [
