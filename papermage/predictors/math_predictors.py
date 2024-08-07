@@ -42,12 +42,12 @@ from ultralytics import YOLO
 from unimernet.common.config import Config
 import unimernet.tasks as tasks
 from unimernet.processors import load_processor
-import sys; sys.path.append('/content/PDF-Extract-Kit')
-from modules.latex2png import tex2pil, zhtext2pil
-from modules.extract_pdf import load_pdf_fitz
-from modules.layoutlmv3.model_init import Layoutlmv3_Predictor
-from modules.self_modify import ModifiedPaddleOCR
-from modules.post_process import get_croped_image, latex_rm_whitespace
+# import sys; sys.path.append('/content/PDF-Extract-Kit')
+from papermage.modules.latex2png import tex2pil, zhtext2pil
+from papermage.modules.extract_pdf import load_pdf_fitz
+from papermage.modules.layoutlmv3.model_init import Layoutlmv3_Predictor
+from papermage.modules.self_modify import ModifiedPaddleOCR
+from papermage.modules.post_process import get_croped_image, latex_rm_whitespace
 import matplotlib.pyplot as plt
 from PIL import Image
 from io import BytesIO
