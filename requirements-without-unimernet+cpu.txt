@@ -1,0 +1,6 @@
+matplotlib
+PyMuPDF
+ultralytics
+paddlepaddle
+paddleocr==2.7.3
+struct-eqtable==0.1.0

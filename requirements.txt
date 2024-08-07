@@ -1,1 +1,11 @@
 -e .[dev,predictors,visualizers]
+unimernet
+matplotlib
+PyMuPDF
+ultralytics
+paddlepaddle-gpu
+paddleocr==2.7.3
+struct-eqtable==0.1.0
+litellm
+openai
+tenacity
