@@ -39,6 +39,9 @@ from .document import (
     TitlesFieldName,
     TokensFieldName,
     WordsFieldName,
+    LatexFieldName,
+    InlineLatexFieldName,
+    VoidFieldName
 )
 from .entity import Entity
 from .image import Image
@@ -84,6 +87,9 @@ __all__ = [
     "TablesFieldName",
     "TitlesFieldName",
     "TokensFieldName",
+    "LatexFieldName",
+    "InlineLatexFieldName",
+    "VoidFieldName",
     "WordsFieldName",
     "BLANK_PAGE_TOKEN",
 ]
