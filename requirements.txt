@@ -3,9 +3,8 @@ unimernet
 matplotlib
 PyMuPDF
 ultralytics
-paddlepaddle-gpu
-paddleocr==2.7.3
 struct-eqtable==0.1.0
-litellm
-openai
-tenacity
+litellm==1.43.0
+openai==0.27.7
+tenacity==8.5.0
+Pillow==8.4.0
