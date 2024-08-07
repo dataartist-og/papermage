@@ -51,6 +51,7 @@ HeadersFieldName = "headers"
 FootersFieldName = "footers"
 FootnotesFieldName = "footnotes"
 
+VoidFieldName = "void"
 
 class Prediction(NamedTuple):
     name: str

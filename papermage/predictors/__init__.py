@@ -8,6 +8,7 @@ from papermage.predictors.token_predictors import HFWhitspaceTokenPredictor
 from papermage.predictors.vila_predictors import IVILATokenClassificationPredictor
 from papermage.predictors.word_predictors import SVMWordPredictor
 from papermage.predictors.math_predictors import MathPredictor
+from papermage.predictors.layoutlm_v3_predictors import LayoutLMv3Predictor
 __all__ = [
     "HFBIOTaggerPredictor",
     "IVILATokenClassificationPredictor",
@@ -19,4 +20,5 @@ __all__ = [
     "APISpanQAPredictor",
     "MathPredictor",
     "BasePredictor",
+    "LayoutLMv3Predictor"
 ]

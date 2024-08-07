@@ -8,6 +8,7 @@ import logging
 import warnings
 from pathlib import Path
 from typing import Dict, List, Union
+import yaml
 
 from papermage.magelib import (
     AbstractsFieldName,
@@ -29,6 +30,8 @@ from papermage.magelib import (
     KeywordsFieldName,
     ListsFieldName,
     LatexFieldName,
+    InlineLatexFieldName,
+    VoidFieldName,
     PagesFieldName,
     ParagraphsFieldName,
     RelationsFieldName,
@@ -49,7 +52,8 @@ from papermage.predictors import (
     LPEffDetPubLayNetBlockPredictor,
     PysbdSentencePredictor,
     SVMWordPredictor,
-    MathPredictor
+    MathPredictor,
+    LayoutLMv3Predictor
 )
 from papermage.predictors.word_predictors import make_text
 from papermage.rasterizers.rasterizer import PDF2ImageRasterizer
@@ -75,6 +79,20 @@ VILA_LABELS_MAP = {
     "Footnote": FootnotesFieldName,
 }
 
+LAYOUTLMV3_LABELS_MAP = {
+    "title": TitlesFieldName,
+    "plain_text": ParagraphsFieldName,
+    "abandon": VoidFieldName,
+    "figure": FiguresFieldName,
+    "figure_caption": CaptionsFieldName,
+    "table": TablesFieldName,
+    "table_caption": CaptionsFieldName,
+    "table_footnote": FootnotesFieldName,
+    "isolate_formula": LatexFieldName,
+    "formula_caption": CaptionsFieldName,
+    "inline_formula": InlineLatexFieldName,
+    "isolated_formula": EquationsFieldName
+}
 
 class SciRecipe(Recipe):
     def __init__(
@@ -82,6 +100,7 @@ class SciRecipe(Recipe):
         ivila_predictor_path: str = "allenai/ivila-row-layoutlm-finetuned-s2vl-v2",
         bio_roberta_predictor_path: str = "allenai/vila-roberta-large-s2vl-internal",
         svm_word_predictor_path: str = "https://ai2-s2-research-public.s3.us-west-2.amazonaws.com/mmda/models/svm_word_predictor.tar.gz",
+        # layoutlmv3_predictor_path: str = "microsoft/layoutlmv3-base",
         dpi: int = 200,
         mf_config_path: str = 'configs/model_configs.yaml'
     ):
@@ -105,6 +124,9 @@ class SciRecipe(Recipe):
         )
         self.sent_predictor = PysbdSentencePredictor()
         self.math_predictor = MathPredictor(mf_config_path, verbose=True)
+        with open('configs/model_configs.yaml') as f:
+            model_configs = yaml.load(f, Loader=yaml.FullLoader)
+        self.layoutlmv3_predictor = LayoutLMv3Predictor.from_pretrained(weight = model_configs['model_args']['layout_weight'], device = model_configs['model_args']['device'])
         self.logger.info("Finished instantiating recipe")
 
     def from_pdf(self, pdf: Path) -> Document:
@@ -160,6 +182,15 @@ class SciRecipe(Recipe):
             ]
         for entity in sorted(latex_entities, key=lambda e: (e.end, e.start), reverse=True):
             doc.symbols[entity.start : entity.end] = entity.metadata.latex
+
+        self.logger.info("Predicting LayoutLMv3...")
+        layoutlmv3_entities = self.layoutlmv3_predictor.predict(doc=doc)
+        doc.annotate_layer(name="layoutlmv3_entities", entities=layoutlmv3_entities)
+
+        # for entity in layoutlmv3_entities:
+        #     entity.text = make_text(entity=entity, document=doc)
+        layoutlmv3_preds = group_by(entities=layoutlmv3_entities, metadata_field="label", metadata_values_map=LAYOUTLMV3_LABELS_MAP)
+        doc.annotate(*layoutlmv3_preds)
 
         return doc
 
