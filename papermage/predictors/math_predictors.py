@@ -92,7 +92,7 @@ def latex_to_image(latex_str, dpi=300):
 
 
 def mfr_model_init(weight_dir, device='cpu'):
-    args = argparse.Namespace(cfg_path="/content/PDF-Extract-Kit/modules/UniMERNet/configs/demo.yaml", options=None)
+    args = argparse.Namespace(cfg_path="modules/UniMERNet/configs/demo.yaml", options=None)
     cfg = Config(args)
     cfg.config.model.pretrained = os.path.join(weight_dir, "pytorch_model.bin")
     cfg.config.model.model_config.model_name = weight_dir
