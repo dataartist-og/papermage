@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict
 from tqdm import tqdm
-
+import numpy as np
 from papermage.magelib import (
     Box,
     Document,
@@ -29,11 +29,11 @@ class LayoutLMv3Predictor(BasePredictor):
         weight: str,
         device: Optional[str] = 'cuda:0',
     ):
-        model = LayoutLMv3Predictor(weight)
-        return cls(model).to()
+        model = Layoutlmv3_Predictor(weight)
+        return cls(model)
 
-    def postprocess(self, layout_result: Dict, page_index: int, image: Image) -> List[Entity]:
-        page_width, page_height = image.pilimage.size
+    def postprocess(self, layout_result: Dict, page_index: int, image: np.Array) -> List[Entity]:
+        page_height, page_width = image.shape[0], image.shape[1]
         entities = []
 
         for layout_det in layout_result["layout_dets"]:
@@ -70,8 +70,9 @@ class LayoutLMv3Predictor(BasePredictor):
         document_prediction = []
 
         images = doc.get_layer(name=ImagesFieldName)
-        for image_index, image in enumerate(tqdm(images)):
-            layout_result = self.model(image.pilimage)
+        for image_index, pm_image in enumerate(tqdm(images)):
+            image = pm_image.to_array()
+            layout_result = self.model(image)
             document_prediction.extend(self.postprocess(layout_result, image_index, image))
 		
         return document_prediction

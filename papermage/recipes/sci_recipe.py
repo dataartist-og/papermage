@@ -110,6 +110,10 @@ class SciRecipe(Recipe):
         self.logger.info("Instantiating recipe...")
         self.parser = PDFPlumberParser()
         self.rasterizer = PDF2ImageRasterizer()
+        with open('configs/model_configs.yaml') as f:
+            model_configs = yaml.load(f, Loader=yaml.FullLoader)
+        self.layoutlmv3_predictor = LayoutLMv3Predictor.from_pretrained(weight = model_configs['model_args']['layout_weight'], device = model_configs['model_args']['device'])
+        self.math_predictor = MathPredictor(mf_config_path, verbose=True)
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -123,10 +127,6 @@ class SciRecipe(Recipe):
             context_name="pages",
         )
         self.sent_predictor = PysbdSentencePredictor()
-        self.math_predictor = MathPredictor(mf_config_path, verbose=True)
-        with open('configs/model_configs.yaml') as f:
-            model_configs = yaml.load(f, Loader=yaml.FullLoader)
-        self.layoutlmv3_predictor = LayoutLMv3Predictor.from_pretrained(weight = model_configs['model_args']['layout_weight'], device = model_configs['model_args']['device'])
         self.logger.info("Finished instantiating recipe")
 
     def from_pdf(self, pdf: Path) -> Document:
@@ -170,27 +170,27 @@ class SciRecipe(Recipe):
         preds = group_by(entities=vila_entities, metadata_field="label", metadata_values_map=VILA_LABELS_MAP)
         doc.annotate(*preds)
 
-        self.logger.info("Predicting latex formulas...")
-        latex_entities = self.math_predictor.predict(doc=doc)
-        doc.annotate_layer(name=LatexFieldName, entities=latex_entities)
-
-        for entity in latex_entities:
-            entity.boxes = [
-                Box.create_enclosing_box(
-                    [b for t in doc.intersect_by_span(entity, name=TokensFieldName) for b in t.boxes]
-                )
-            ]
-        for entity in sorted(latex_entities, key=lambda e: (e.end, e.start), reverse=True):
-            doc.symbols[entity.start : entity.end] = entity.metadata.latex
-
         self.logger.info("Predicting LayoutLMv3...")
         layoutlmv3_entities = self.layoutlmv3_predictor.predict(doc=doc)
         doc.annotate_layer(name="layoutlmv3_entities", entities=layoutlmv3_entities)
 
         # for entity in layoutlmv3_entities:
         #     entity.text = make_text(entity=entity, document=doc)
-        layoutlmv3_preds = group_by(entities=layoutlmv3_entities, metadata_field="label", metadata_values_map=LAYOUTLMV3_LABELS_MAP)
+        layoutlmv3_preds = group_by(entities=layoutlmv3_entities, metadata_field="label")
         doc.annotate(*layoutlmv3_preds)
+
+        self.logger.info("Predicting latex formulas...")
+        latex_entities = self.math_predictor.predict(doc=doc)
+        doc.annotate_layer(name="MFR", entities=latex_entities)
+
+        # for entity in latex_entities:
+        #     entity.boxes = [
+        #         Box.create_enclosing_box(
+        #             [b for t in doc.intersect_by_span(entity, name=TokensFieldName) for b in t.boxes]
+        #         )
+        #     ]
+        # for entity in sorted(latex_entities, key=lambda e: (e.end, e.start), reverse=True):
+        #     doc.symbols[entity.start : entity.end] = entity.metadata.latex
 
         return doc
 

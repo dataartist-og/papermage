@@ -1,7 +1,8 @@
 from .visualizer import Visualizer
 from .rcnn_vl import *
 from .backbone import *
-
+import os.path as osp
+import os
 from detectron2.config import get_cfg
 from detectron2.config import CfgNode as CN
 from detectron2.data import MetadataCatalog, DatasetCatalog
@@ -101,7 +102,7 @@ class DotDict(dict):
 class Layoutlmv3_Predictor(object):
     def __init__(self, weights):
         layout_args = {
-            "config_file": "modules/layoutlmv3/layoutlmv3_base_inference.yaml",
+            "config_file": os.path.join(os.path.dirname(os.path.realpath(__file__)), "layoutlmv3_base_inference.yaml"),
             "resume": False,
             "eval_only": False,
             "num_gpus": 1,
