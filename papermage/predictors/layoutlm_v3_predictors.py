@@ -32,7 +32,7 @@ class LayoutLMv3Predictor(BasePredictor):
         model = Layoutlmv3_Predictor(weight)
         return cls(model)
 
-    def postprocess(self, layout_result: Dict, page_index: int, image: np.Array) -> List[Entity]:
+    def postprocess(self, layout_result: Dict, page_index: int, image: np.ndarray) -> List[Entity]:
         page_height, page_width = image.shape[0], image.shape[1]
         entities = []
 
